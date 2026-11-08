@@ -1,0 +1,55 @@
+controller_manager:
+  ros__parameters:
+    update_rate: 50  # Hz
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    # base_controller:
+    #   type: velocity_controllers/JointGroupVelocityController
+
+    # arm_controller:
+    #   type: position_controllers/JointGroupPositionController
+
+    robot_controller:
+      type: robot_controller/RobotController   # once your plugin is built
+
+
+base_controller:
+  ros__parameters:
+    joints:
+      - base_x
+      - base_y
+      - base_theta
+
+arm_controller:
+  ros__parameters:
+    joints:
+      - yaw
+      - shoulder
+      - elbow
+      - forearm_twist
+      - wrist_pitch
+      - wrist_yaw
+
+
+robot_controller:
+  ros__parameters:
+    type: robot_controller/RobotController
+    joints:
+      - base_x
+      - base_y
+      - base_theta
+      - yaw
+      - shoulder
+      - elbow
+      - forearm_twist
+      - wrist_pitch
+      - wrist_yaw
+
+    command_interfaces:
+      - position
+
+    state_interfaces:
+      - position
+      - velocity

@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+
+    <!-- Height of chassis_base origin above the ground; tune so wheels just touch -->
+    <xacro:property name="base_height" value="0.07" />
+
+    <xacro:macro name="dummy_inertial">
+        <inertial>
+            <mass value="0.01" />
+            <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4" />
+        </inertial>
+    </xacro:macro>
+
+    <!-- A link named "world" fixes the model to the Gazebo world -->
+    <link name="world" />
+
+    <link name="base_x_link">
+        <xacro:dummy_inertial />
+    </link>
+    <link name="base_y_link">
+        <xacro:dummy_inertial />
+    </link>
+
+    <joint name="base_x" type="prismatic">
+        <parent link="world" />
+        <child link="base_x_link" />
+        <origin xyz="0 0 ${base_height}" rpy="0 0 0" />
+        <axis xyz="1 0 0" />
+        <limit lower="-10" upper="10" effort="1000" velocity="1.0" />
+    </joint>
+
+    <joint name="base_y" type="prismatic">
+        <parent link="base_x_link" />
+        <child link="base_y_link" />
+        <axis xyz="0 1 0" />
+        <limit lower="-10" upper="10" effort="1000" velocity="1.0" />
+    </joint>
+
+    <joint name="base_theta" type="continuous">
+        <parent link="base_y_link" />
+        <child link="chassis_base" />   <!-- root link from robot.urdf -->
+        <axis xyz="0 0 1" />
+        <limit effort="1000" velocity="15.0" />
+    </joint>
+</robot>

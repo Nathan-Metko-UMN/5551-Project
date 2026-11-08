@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<robot name="robot" xmlns:xacro="http://ros.org/wiki/xacro">
+    <xacro:include filename="$(find robot)/discription/udrf/robot.urdf" />
+    <xacro:include filename="$(find robot)/discription/udrf/chassis.xacro" />
+    <xacro:include filename="$(find robot)/discription/udrf/robot.ros2_control.xacro" />
+
+    <xacro:robot_ros2_control name="RobotController" />
+</robot>

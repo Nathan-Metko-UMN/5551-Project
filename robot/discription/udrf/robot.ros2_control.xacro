@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+
+    <xacro:macro name="joint_if" params="name pos_min pos_max vel_max">
+        <joint name="${name}">
+            <command_interface name="position">
+                <param name="min">${pos_min}</param>
+                <param name="max">${pos_max}</param>
+            </command_interface>
+            <command_interface name="velocity">
+                <param name="min">${-vel_max}</param>
+                <param name="max">${vel_max}</param>
+            </command_interface>
+            <state_interface name="position">
+                <param name="initial_value">0.0</param>
+            </state_interface>
+            <state_interface name="velocity" />
+        </joint>
+    </xacro:macro>
+
+    <xacro:macro name="robot_ros2_control" params="name">
+        <ros2_control name="${name}" type="system">
+            <hardware>
+                <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+            </hardware>
+
+            <xacro:joint_if name="base_x" pos_min="${-1e6}" pos_max="${1e6}" vel_max="5.0" />
+            <xacro:joint_if name="base_y" pos_min="${-1e6}" pos_max="${1e6}" vel_max="5.0" />
+            <xacro:joint_if name="base_theta" pos_min="${-1e6}" pos_max="${1e6}" vel_max="15.0" />
+            <xacro:joint_if name="yaw" pos_min="${-1e6}" pos_max="${1e6}" vel_max="10" />
+            <xacro:joint_if name="shoulder" pos_min="-3.23438" pos_max="0.415388" vel_max="10.47" />
+            <xacro:joint_if name="elbow" pos_min="-2.79253" pos_max="2.79253" vel_max="3.77" />
+            <xacro:joint_if name="forearm_twist" pos_min="-4.71239" pos_max="4.71239"
+                vel_max="12.57" />
+            <xacro:joint_if name="wrist_pitch" pos_min="-1.98968" pos_max="1.98968" vel_max="12.57" />
+            <xacro:joint_if name="wrist_yaw" pos_min="-4.71239" pos_max="-4.71239" vel_max="12.57" />
+
+        </ros2_control>
+
+        <gazebo>
+            <plugin filename="gz_ros2_control-system"
+                name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+                <parameters>$(find robot)/config/controllers.yaml</parameters>
+            </plugin>
+        </gazebo>
+    </xacro:macro>
+</robot>

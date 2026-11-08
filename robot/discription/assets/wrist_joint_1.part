@@ -1,0 +1,13 @@
+{
+    "configuration": "default",
+    "documentId": "4865f398df68ad124dca97b4",
+    "documentMicroversion": "36125b16efc37017ed268063",
+    "elementId": "ecee0283e81306e473fc3a32",
+    "fullConfiguration": "default",
+    "id": "Mf0qpyDnukUg6mTJo",
+    "isStandardContent": false,
+    "name": "wrist_joint_1 <4>",
+    "partId": "JHD",
+    "suppressed": false,
+    "type": "Part"
+}
