@@ -1,0 +1,14 @@
+/**:
+  ros__parameters:
+    wire:
+      points: [0.3, 0.0, 0.3,
+               0.4, 0.1, 0.3,
+               0.5, 0.0, 0.4,
+               0.6, -0.1, 0.3]
+      degree: 3
+      num_ctrl: 0
+      smoothing: 0.0
+      param_exponent: 0.5
+      pin_ends: true
+      samples: 2000
+      radius: 0.005

@@ -52,11 +52,14 @@ def generate_launch_description():
     controllers_yaml = PathJoinSubstitution(
         [FindPackageShare('robot'), 'config', 'controllers.yaml'])
 
+    wire_yaml = PathJoinSubstitution([FindPackageShare('robot'), 'config', 'wire.yaml'])
+
+
     def spawner(name):
         return Node(
             package='controller_manager',
             executable='spawner',
-            arguments=[name, '--param-file', controllers_yaml],
+            arguments=[name, '--param-file', controllers_yaml, '--param-file', wire_yaml],
             output='screen',
         )
 
@@ -74,6 +77,17 @@ def generate_launch_description():
         )
     )
 
+    wire_sdf = Command(
+        ['ros2 run robot wire_generator --ros-args --params-file ', wire_yaml],
+        on_stderr='warn')
+    spawn_wire = Node(
+        package='ros_gz_sim',
+        executable='create',
+        arguments=['-string', wire_sdf, '-name', 'wire'],
+        output='screen',
+    )
+
+
     return LaunchDescription([
         world_arg,
         gazebo,
@@ -82,4 +96,5 @@ def generate_launch_description():
         bridges,
         joint_state_broadcaster,
         other_controllers,
+        spawn_wire,
     ])
