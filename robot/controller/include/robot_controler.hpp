@@ -21,15 +21,14 @@
 #include <unordered_map>
 #include <vector>
 
-#include <kdl/chain.hpp>
-#include <kdl/chainfksolverpos_recursive.hpp>
-#include <kdl/jntarray.hpp>
+#include <kdl/frames.hpp>
 
 #include "controller_interface/controller_interface.hpp"
 #include "rclcpp/duration.hpp"
 #include "rclcpp/time.hpp"
 
 #include "bspline.hpp"
+#include "ik_solver.hpp"
 
 namespace Controller
 {
@@ -87,9 +86,9 @@ protected:
 
     std::optional<wire::Wire> wire_;
 
-    KDL::Chain chain_;
-    std::unique_ptr<KDL::ChainFkSolverPos_recursive> fk_solver_;
-    KDL::JntArray q_;     // current joint positions, same order as joint_names_
+    IkSolver ik_;
+
+    KDL::JntArray q_;
     KDL::Frame ee_pose_;  // FK result: end-effector pose in world
 };
 

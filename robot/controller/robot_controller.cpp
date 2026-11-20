@@ -17,8 +17,6 @@
 #include <string>
 #include <vector>
 
-#include <kdl_parser/kdl_parser.hpp>
-
 #include "rclcpp/time.hpp"
 #include "rclcpp_lifecycle/node_interfaces/lifecycle_node_interface.hpp"
 #include "rclcpp_lifecycle/state.hpp"
@@ -79,26 +77,20 @@ controller_interface::InterfaceConfiguration RobotController::state_interface_co
 
 controller_interface::CallbackReturn RobotController::on_configure(const rclcpp_lifecycle::State &)
 {
-    KDL::Tree tree;
-    if (!kdl_parser::treeFromString(get_robot_description(), tree) ||
-        !tree.getChain("world", "end_effector_pose", chain_))
+    std::string error;
+    if (!ik_.init(get_robot_description(), "world", "end_effector_pose", error))
     {
-        RCLCPP_ERROR(
-            get_node()->get_logger(),
-            "Failed to build KDL chain world -> end_effector_pose");
+        RCLCPP_ERROR(get_node()->get_logger(), "Error building ik, %s", error.c_str());
         return CallbackReturn::ERROR;
     }
-    if (chain_.getNrOfJoints() != joint_names_.size())
+
+    if (ik_.jointNames() != joint_names_)
     {
-        RCLCPP_ERROR(
-            get_node()->get_logger(),
-            "KDL chain has %u joints, controller has %zu",
-            chain_.getNrOfJoints(),
-            joint_names_.size());
+        RCLCPP_ERROR(get_node()->get_logger(), "Joint names differ in IK setup");
         return CallbackReturn::ERROR;
     }
-    fk_solver_ = std::make_unique<KDL::ChainFkSolverPos_recursive>(chain_);
-    q_.resize(chain_.getNrOfJoints());
+
+    q_.resize(ik_.numJoints());
 
     try
     {
@@ -140,13 +132,23 @@ controller_interface::return_type RobotController::update(
     const rclcpp::Time &time,
     const rclcpp::Duration & /*period*/)
 {
+    // get ee_pose from ik_solver fk
     for (size_t i = 0; i < joint_position_state_interface_.size(); i++)
     {
-        const auto pos = joint_position_state_interface_[i].get().get_optional();
-        if (!pos) return controller_interface::return_type::OK;
-        q_(static_cast<unsigned int>(i)) = *pos;
+        std::optional<double> joint_position =
+            joint_position_state_interface_[i].get().get_optional();
+        if (!joint_position.has_value())
+        {
+            return controller_interface::return_type::OK;
+        }
+
+        q_(static_cast<unsigned int>(i)) = joint_position.value();
     }
-    fk_solver_->JntToCart(q_, ee_pose_);
+
+    if (!ik_.fk(q_, ee_pose_))
+    {
+        return controller_interface::return_type::ERROR;
+    }
 
     double s = wire_->project(Eigen::Vector3d(ee_pose_.p.x(), ee_pose_.p.y(), ee_pose_.p.z()));
 
@@ -161,28 +163,6 @@ controller_interface::return_type RobotController::update(
         goal_pose[0],
         goal_pose[1],
         goal_pose[2]);
-
-    // joint_position_state_interface_[8].get().get_optional();
-
-    // TODO: need to figure out what to put here, good example below
-    // for (size_t i = 0; i < joint_position_command_interface_.size(); i++)
-    // {
-    //   if
-    //   (!joint_position_command_interface_[i].get().set_value(point_interp_.positions[i]))
-    //   {
-    //     RCLCPP_ERROR(get_node()->get_logger(), "Failed to set position value
-    //     for index %ld", i);
-    //   }
-    // }
-    // for (size_t i = 0; i < joint_velocity_command_interface_.size(); i++)
-    // {
-    //   if
-    //   (!joint_velocity_command_interface_[i].get().set_value(point_interp_.velocities[i]))
-    //   {
-    //     RCLCPP_ERROR(get_node()->get_logger(), "Failed to set velocity value
-    //     for index %ld", i);
-    //   }
-    // }
 
     return controller_interface::return_type::OK;
 }

@@ -27,6 +27,7 @@ endforeach()
 ## COMPILE
 add_library(robot_controller SHARED
   controller/robot_controller.cpp
+  src/ik_solver.cpp
 )
 add_executable(wire_generator src/wire_generator.cpp)
 
