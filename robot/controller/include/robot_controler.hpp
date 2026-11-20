@@ -15,10 +15,15 @@
 #ifndef ROBOT_CONTROLER_HPP_
 #define ROBOT_CONTROLER_HPP_
 
+#include <memory>
 #include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
+
+#include <kdl/chain.hpp>
+#include <kdl/chainfksolverpos_recursive.hpp>
+#include <kdl/jntarray.hpp>
 
 #include "controller_interface/controller_interface.hpp"
 #include "rclcpp/duration.hpp"
@@ -81,6 +86,11 @@ protected:
             {"velocity", &joint_velocity_state_interface_}};
 
     std::optional<wire::Wire> wire_;
+
+    KDL::Chain chain_;
+    std::unique_ptr<KDL::ChainFkSolverPos_recursive> fk_solver_;
+    KDL::JntArray q_;     // current joint positions, same order as joint_names_
+    KDL::Frame ee_pose_;  // FK result: end-effector pose in world
 };
 
 }  // namespace Controller

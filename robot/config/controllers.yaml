@@ -5,11 +5,11 @@ controller_manager:
     joint_state_broadcaster:
       type: joint_state_broadcaster/JointStateBroadcaster
 
-    # base_controller:
-    #   type: velocity_controllers/JointGroupVelocityController
+    base_controller:
+      type: velocity_controllers/JointGroupVelocityController
 
-    # arm_controller:
-    #   type: position_controllers/JointGroupPositionController
+    arm_controller:
+      type: position_controllers/JointGroupPositionController
 
     robot_controller:
       type: robot_controller/RobotController   # once your plugin is built

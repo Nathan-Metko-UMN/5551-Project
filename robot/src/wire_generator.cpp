@@ -1,6 +1,7 @@
 // Prints an SDF model of the wire to stdout, built from the same wire.yaml
 // parameters (and the same wire::loadWire) the controller uses.
 #include <cmath>
+#include <fstream>
 #include <iostream>
 #include <memory>
 #include <sstream>
@@ -24,7 +25,8 @@ int main(int argc, char** argv)
 
         std::ostringstream sdf;
         sdf << "<?xml version='1.0'?>\n<sdf version='1.9'>\n<model "
-               "name='wire'>\n<static>true</static>\n";
+               "name='wire'>\n<static>true</static>\n"
+            << "<link name='wire'>\n";
         for (int i = 0; i < n; ++i)
         {
             const wire::Vec3 a = w.position(w.length() * i / n);
@@ -35,18 +37,31 @@ int main(int argc, char** argv)
             const Eigen::Quaterniond q =
                 Eigen::Quaterniond::FromTwoVectors(wire::Vec3::UnitZ(), (b - a).normalized());
 
-            sdf << "<link name='seg_" << i << "'>\n"
+            sdf << "<visual name='seg_" << i << "'>\n"
                 << "<pose rotation_format='quat_xyzw'>" << mid.x() << ' ' << mid.y() << ' '
                 << mid.z() << ' ' << q.x() << ' ' << q.y() << ' ' << q.z() << ' ' << q.w()
                 << "</pose>\n"
-                << "<visual name='v'><geometry><cylinder><radius>" << radius << "</radius><length>"
-                << len << "</length></cylinder></geometry>"
+                << "<geometry><cylinder><radius>" << radius << "</radius><length>" << len
+                << "</length></cylinder></geometry>"
                 << "<material><diffuse>0.8 0.4 0.1 1</diffuse><ambient>0.8 0.4 0.1 "
                    "1</ambient></material>"
-                << "</visual>\n</link>\n";
+                << "</visual>\n";
+            sdf << "<collision name='c_" << i << "'>\n"
+                << "<pose rotation_format='quat_xyzw'>" << mid.x() << ' ' << mid.y() << ' '
+                << mid.z() << ' ' << q.x() << ' ' << q.y() << ' ' << q.z() << ' ' << q.w()
+                << "</pose>\n"
+                << "<geometry><cylinder><radius>" << radius << "</radius><length>" << len
+                << "</length></cylinder></geometry>\n"
+                << "</collision>\n";
         }
-        sdf << "</model>\n</sdf>\n";
-        std::cout << sdf.str();
+        sdf << "</link>\n</model>\n</sdf>\n";
+
+        const auto out =
+            wire::getParam<std::string>(*node, "wire.sdf_file", std::string("/tmp/wire.sdf"));
+        std::ofstream file(out);
+        if (!file) throw std::runtime_error("cannot write " + out);
+        file << sdf.str();
+        std::cout << out;
     }
     catch (const std::exception& e)
     {

@@ -19,6 +19,7 @@ find_package(controller_manager 4.0.0 REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(backward_ros REQUIRED)
 find_package(Eigen3 REQUIRED)
+find_package(kdl_parser REQUIRED)        
 foreach(Dependency IN ITEMS ${CONTROLLER_INCLUDE_DEPENDS})
   find_package(${Dependency} REQUIRED)
 endforeach()
@@ -41,6 +42,7 @@ target_link_libraries(robot_controller PUBLIC
   rclcpp::rclcpp
   rclcpp_lifecycle::rclcpp_lifecycle
   Eigen3::Eigen
+  kdl_parser::kdl_parser
 )
 target_link_libraries(wire_generator   PRIVATE rclcpp::rclcpp Eigen3::Eigen)
 

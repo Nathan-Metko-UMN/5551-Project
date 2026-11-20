@@ -9,6 +9,8 @@ from launch.substitutions import Command, LaunchConfiguration, PathJoinSubstitut
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
+from launch.actions import AppendEnvironmentVariable
+
 
 
 def generate_launch_description():
@@ -18,6 +20,10 @@ def generate_launch_description():
     xacro_file = PathJoinSubstitution(
         [FindPackageShare('robot'), 'discription', 'udrf', 'robot.urdf.xacro'])
     robot_description = ParameterValue(Command(['xacro ', xacro_file]), value_type=str)
+
+    resource_path = AppendEnvironmentVariable(
+        'GZ_SIM_RESOURCE_PATH',
+        os.path.dirname(get_package_share_directory('robot')))
 
     gazebo = IncludeLaunchDescription(
         PathJoinSubstitution([FindPackageShare('ros_gz_sim'), 'launch', 'gz_sim.launch.py']),
@@ -55,11 +61,11 @@ def generate_launch_description():
     wire_yaml = PathJoinSubstitution([FindPackageShare('robot'), 'config', 'wire.yaml'])
 
 
-    def spawner(name):
+    def spawner(name, *extra):
         return Node(
             package='controller_manager',
             executable='spawner',
-            arguments=[name, '--param-file', controllers_yaml, '--param-file', wire_yaml],
+            arguments=[name, '--param-file', controllers_yaml, '--param-file', wire_yaml,  '--switch-timeout', '30', *extra],
             output='screen',
         )
 
@@ -70,26 +76,28 @@ def generate_launch_description():
         OnProcessExit(
             target_action=joint_state_broadcaster,
             on_exit=[
-                # spawner('base_controller'),
-                # spawner('arm_controller'),
-                spawner('robot_controller'),   # once the plugin is built
+                spawner('robot_controller'),
+                spawner('base_controller', '--inactive'),
+                spawner('arm_controller', '--inactive'),
             ],
         )
     )
 
-    wire_sdf = Command(
+    wire_sdf_file = Command(
         ['ros2 run robot wire_generator --ros-args --params-file ', wire_yaml],
         on_stderr='warn')
     spawn_wire = Node(
         package='ros_gz_sim',
         executable='create',
-        arguments=['-string', wire_sdf, '-name', 'wire'],
+        arguments=['-file', wire_sdf_file, '-name', 'wire'],
         output='screen',
     )
 
 
+
     return LaunchDescription([
         world_arg,
+        resource_path,
         gazebo,
         robot_state_publisher,
         spawn_robot,

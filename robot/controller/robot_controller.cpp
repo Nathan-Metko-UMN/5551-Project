@@ -17,6 +17,8 @@
 #include <string>
 #include <vector>
 
+#include <kdl_parser/kdl_parser.hpp>
+
 #include "rclcpp/time.hpp"
 #include "rclcpp_lifecycle/node_interfaces/lifecycle_node_interface.hpp"
 #include "rclcpp_lifecycle/state.hpp"
@@ -77,6 +79,27 @@ controller_interface::InterfaceConfiguration RobotController::state_interface_co
 
 controller_interface::CallbackReturn RobotController::on_configure(const rclcpp_lifecycle::State &)
 {
+    KDL::Tree tree;
+    if (!kdl_parser::treeFromString(get_robot_description(), tree) ||
+        !tree.getChain("world", "end_effector_pose", chain_))
+    {
+        RCLCPP_ERROR(
+            get_node()->get_logger(),
+            "Failed to build KDL chain world -> end_effector_pose");
+        return CallbackReturn::ERROR;
+    }
+    if (chain_.getNrOfJoints() != joint_names_.size())
+    {
+        RCLCPP_ERROR(
+            get_node()->get_logger(),
+            "KDL chain has %u joints, controller has %zu",
+            chain_.getNrOfJoints(),
+            joint_names_.size());
+        return CallbackReturn::ERROR;
+    }
+    fk_solver_ = std::make_unique<KDL::ChainFkSolverPos_recursive>(chain_);
+    q_.resize(chain_.getNrOfJoints());
+
     try
     {
         wire_.emplace(wire::loadWire(*get_node()));  // same function + params as wire_generator
@@ -117,17 +140,29 @@ controller_interface::return_type RobotController::update(
     const rclcpp::Time &time,
     const rclcpp::Duration & /*period*/)
 {
-    static double spin = 0;
-    spin = spin + 0.05f;
-    spin = spin > 3 ? -3 : spin;
-    std::cout << "spin:" << spin << std::endl;
-    for (size_t i = 0; i < joint_position_command_interface_.size(); i++)
+    for (size_t i = 0; i < joint_position_state_interface_.size(); i++)
     {
-        if (!joint_position_command_interface_[i].get().set_value(spin))
-        {
-            RCLCPP_ERROR(get_node()->get_logger(), "Failed to set position value for index %ld", i);
-        }
+        const auto pos = joint_position_state_interface_[i].get().get_optional();
+        if (!pos) return controller_interface::return_type::OK;
+        q_(static_cast<unsigned int>(i)) = *pos;
     }
+    fk_solver_->JntToCart(q_, ee_pose_);
+
+    double s = wire_->project(Eigen::Vector3d(ee_pose_.p.x(), ee_pose_.p.y(), ee_pose_.p.z()));
+
+    Eigen::Vector3d goal_pose = wire_->position(s);
+
+    RCLCPP_INFO_THROTTLE(
+        get_node()->get_logger(),
+        *get_node()->get_clock(),
+        500,
+        "Wire Pose: %.4f, Goal pose: x %.2f, y %.2f, z %.2f",
+        s,
+        goal_pose[0],
+        goal_pose[1],
+        goal_pose[2]);
+
+    // joint_position_state_interface_[8].get().get_optional();
 
     // TODO: need to figure out what to put here, good example below
     // for (size_t i = 0; i < joint_position_command_interface_.size(); i++)

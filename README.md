@@ -24,21 +24,16 @@ ros2 launch urdf_tutorial display.launch.py model:=/workspaces/5551-Project/robo
 
 
 ## moving the robot
-only works with old controlers
+switch controlers:
+ros2 control switch_controllers --deactivate robot_controller --activate base_controller arm_controller
 
-move +x at 0.2 m/s while turning at 0.5 rad/s
-ros2 topic pub --once /base_controller/commands std_msgs/msg/Float64MultiArray "{data: [0.2, 0.0, 0.5]}"
+# base: [vx, vy, ω] in the world frame (velocity)
+ros2 topic pub --once /base_controller/commands std_msgs/msg/Float64MultiArray "{data: [0.1, 0.0, 0.0]}"
+# arm: [yaw, shoulder, elbow, forearm_twist, wrist_pitch, wrist_yaw] in radians (position)
+ros2 topic pub --once /arm_controller/commands std_msgs/msg/Float64MultiArray "{data: [0.5, -1.0, 0.5, 0.0, 0.3, 0.0]}"
 
-stop
-ros2 topic pub --once /base_controller/commands std_msgs/msg/Float64MultiArray "{data: [0.0, 0.0, 0.0]}"
-
-
-
-ros2 topic pub --once /arm_controller/commands std_msgs/msg/Float64MultiArray "{data: [0.5, 0.3, -0.5, 0.0, 0.2, 0.0]}"
-
-back to zero
-ros2 topic pub --once /arm_controller/commands std_msgs/msg/Float64MultiArray "{data: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]}"
-
+Switch back
+ros2 control switch_controllers --deactivate base_controller arm_controller --activate robot_controller
 
 # wire
 
